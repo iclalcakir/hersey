@@ -1528,10 +1528,18 @@ function buildTodo(){
     return v===todoVade;
   });
 
-  // Tamamlananlar sona
+  // Tamamlananlar sona; vade=all iken kısa→orta→uzun, her grup içinde ekleniş tarihine göre
+  const _vadeSira={kisa:0,orta:1,uzun:2};
   goruntule=[...goruntule].sort((a,b)=>{
     if(a.tamamlandi!==b.tamamlandi)return a.tamamlandi?1:-1;
-    return 0;
+    if(todoVade==='all'){
+      const va=_vadeSira[a.vade||a.oncelik||'orta']??1;
+      const vb=_vadeSira[b.vade||b.oncelik||'orta']??1;
+      if(va!==vb)return va-vb;
+    }
+    const ta=Number(a.id)||0;
+    const tb=Number(b.id)||0;
+    return ta-tb;
   });
 
   // Her vade için sayılar (aktif)
