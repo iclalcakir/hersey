@@ -676,7 +676,7 @@ function _saveOrder(list,ids){
   _pushUndo();
   if(list==='todo'){
     const vade=todoVade;
-    const others=state.todos.filter(t=>(t.vade||t.oncelik||'orta')!==vade);
+    const others=vade==='all'?[]:state.todos.filter(t=>(t.vade||t.oncelik||'orta')!==vade);
     const sorted=ids.map(id=>state.todos.find(t=>t.id===id)).filter(Boolean);
     state.todos=[...others,...sorted];
   } else if(list==='sureziz'){
@@ -837,7 +837,7 @@ let adimModalId=null;
 let duzenleAcik=false;
 let adimDuzenlemeIdx=null;
 let adimNotModalIdx=null;
-let todoVade='kisa';
+let todoVade='all';
 (function(){try{const pos=JSON.parse(sessionStorage.getItem('hersey_pos')||'{}');if(pos.todoVade)todoVade=pos.todoVade;}catch(e){}})();
 let todoForm=null;
 let notForm=null;
@@ -868,9 +868,7 @@ function updateNav(){
   rail.style.top='auto';rail.style.bottom='0';
 
   const ITEMS=[
-    {v:"todo_kisa",    icon:SVG.todo,     sep:false},
-    {v:"todo_orta",    icon:SVG.todo2,    sep:false},
-    {v:"todo_uzun",    icon:SVG.todo3,    sep:false},
+    {v:"todo",         icon:SVG.todo,     sep:false},
     {v:"",             sep:true},
     {v:"etkinlik",      icon:SVG.randevu,   sep:false},
     {v:"",             sep:true},
@@ -914,6 +912,9 @@ function updateNav(){
         if(v.startsWith('todo_')){
           todoVade=v.replace('todo_','');
           cv='todo';
+        } else if(v==='todo'){
+          todoVade='all';
+          cv='todo';
         } else if(v==='etkinlik'){
           cv='etkinlik';
         } else {
@@ -929,20 +930,15 @@ function updateNav(){
   rail.querySelectorAll('.rail-item').forEach(function(btn){
     const v=btn.dataset.v;
     let isActive=false;
-    if(v==='todo_kisa') isActive=cv==='todo'&&todoVade==='kisa';
-    else if(v==='todo_orta') isActive=cv==='todo'&&todoVade==='orta';
-    else if(v==='todo_uzun') isActive=cv==='todo'&&todoVade==='uzun';
-    else if(v==='todo_sureziz') isActive=cv==='todo'&&todoVade==='sureziz';
+    if(v==='todo') isActive=cv==='todo';
     else if(v==='etkinlik') isActive=cv==='etkinlik';
     else if(v==='notlar') isActive=cv==='notlar';
     else if(v==='ayarlar') isActive=cv==='ayarlar';
     btn.classList.toggle('active',isActive);
 
-    // Todo badge'leri güncelle
-    if(v==='todo_kisa'||v==='todo_orta'||v==='todo_uzun'){
-      const vade=v.replace('todo_','');
-      const sayi=(state.todos||[]).filter(t=>(t.vade||t.oncelik||'orta')===vade&&!t.tamamlandi).length;
-      const RENK={kisa:'#C84848',orta:'#C87828',uzun:'#4A70B0'};
+    // Todo badge'i güncelle (tüm vadelerin toplamı)
+    if(v==='todo'){
+      const sayi=(state.todos||[]).filter(t=>!t.tamamlandi).length;
       let badge=btn.querySelector('.rail-badge');
       if(sayi>0){
         if(!badge){
@@ -952,7 +948,7 @@ function updateNav(){
           btn.style.position='relative';
           btn.appendChild(badge);
         }
-        badge.style.background=RENK[vade];
+        badge.style.background='var(--accent)';
         badge.textContent=sayi>9?'9+':sayi;
       } else if(badge){
         badge.remove();
@@ -988,7 +984,7 @@ function buildHeader(){
         if(cv==='notlar') return 'Notlar';
         if(cv==='etkinlik') return 'Etkinlikler';
         const alt=todoAlt[todoVade]||'';
-        return 'Yapılacaklar <span style="opacity:.5;font-weight:600;font-size:16px">/ '+alt+'</span>';
+        return alt?('Yapılacaklar <span style="opacity:.5;font-weight:600;font-size:16px">/ '+alt+'</span>'):'Yapılacaklar';
       })()}</div>
       </div>
       ${cv==="todo"?`<button class="add-btn" onclick="todoYeniAc()" style="padding:0;text-align:center;vertical-align:middle">+</button>`:cv==="notlar"?`<button class="add-btn" onclick="notYeniAc()" style="padding:0;text-align:center;vertical-align:middle">+</button>`:cv==="etkinlik"?`<button class="add-btn" onclick="etkinlikYeniAc()" style="padding:0;text-align:center;vertical-align:middle">+</button>`:""}
@@ -1543,11 +1539,11 @@ function buildTodo(){
   }
 
   let html='';
-  // Seçili vadeye göre filtrele
+  // Seçili vadeye göre filtrele (todoVade==='all' iken tüm görevler gösterilir)
   let goruntule=state.todos.filter(t=>{
+    if(todoVade==='all')return true;
     const v=t.vade||t.oncelik||'orta';
-    if(v!==todoVade)return false;
-    return true;
+    return v===todoVade;
   });
 
   // Tamamlananlar sona
@@ -1568,7 +1564,7 @@ function buildTodo(){
   const _LBL={kisa:'Kısa',orta:'Orta',uzun:'Uzun'};
   html+=`<div style="display:flex;gap:6px;margin-bottom:16px">
     ${['kisa','orta','uzun'].map(v=>`
-      <button onclick="todoVade='${v}';render()" style="flex:1;padding:8px 6px;border-radius:12px;border:1.5px solid ${todoVade===v?_RENK[v]:'var(--border)'};background:${todoVade===v?_BG[v]:'var(--card)'};cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;transition:all .15s">
+      <button onclick="todoVade=(todoVade==='${v}'?'all':'${v}');render()" style="flex:1;padding:8px 6px;border-radius:12px;border:1.5px solid ${todoVade===v?_RENK[v]:'var(--border)'};background:${todoVade===v?_BG[v]:'var(--card)'};cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;transition:all .15s">
         <span style="font-size:16px;font-weight:800;color:${_RENK[v]}">${sayilar[v]}</span>
         <span style="font-size:10px;font-weight:700;color:${todoVade===v?_RENK[v]:'var(--sub)'}">${_LBL[v]}</span>
       </button>
@@ -1578,7 +1574,7 @@ function buildTodo(){
   if(goruntule.length===0){
     html+=`<div class="empty">
       <div class="empty-emoji">✅</div>
-      <div class="empty-title">'Bu vadede görev yok'</div>
+      <div class="empty-title">${todoVade==='all'?'Henüz görev yok':'Bu vadede görev yok'}</div>
       <div class="empty-sub">+ butonuna basarak görev ekle</div>
     </div>`;
   } else {
@@ -1604,7 +1600,7 @@ function buildTodo(){
           <span class="drag-handle" style="display:flex;align-items:center;padding:0 6px 0 0;cursor:grab;color:var(--border);flex-shrink:0;touch-action:none"><svg width="14" height="20" style="pointer-events:none" viewBox="0 0 10 16" fill="currentColor"><circle cx="3" cy="3" r="1.5"/><circle cx="7" cy="3" r="1.5"/><circle cx="3" cy="8" r="1.5"/><circle cx="7" cy="8" r="1.5"/><circle cx="3" cy="13" r="1.5"/><circle cx="7" cy="13" r="1.5"/></svg></span>
           <div style="flex:1;min-width:0">
             <div style="font-size:14px;font-weight:700;color:var(--text);text-decoration:none;line-height:1.3">
-              ${esc(t.baslik)}
+              ${todoVade==='all'?(()=>{const tv=t.vade||t.oncelik||'orta';return `<span style="font-size:9px;font-weight:800;color:${VADE_RENK[tv]};background:${VADE_BG[tv]};padding:2px 6px;border-radius:6px;margin-right:6px;vertical-align:middle">${VADE_LBL[tv].replace(' Vade','')}</span>`;})():''}${esc(t.baslik)}
               ${isListe?`<span style="font-size:11px;font-weight:600;color:var(--sub);margin-left:6px">${tamamlananAlt}/${altMaddeler.length}</span>`:''}
             </div>
             ${t.deadline?`<div style="font-size:11px;font-weight:600;margin-top:2px">📅 ${deadlineLbl}</div>`:''}
