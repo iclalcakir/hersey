@@ -936,24 +936,6 @@ function updateNav(){
     else if(v==='ayarlar') isActive=cv==='ayarlar';
     btn.classList.toggle('active',isActive);
 
-    // Todo badge'i güncelle (tüm vadelerin toplamı)
-    if(v==='todo'){
-      const sayi=(state.todos||[]).filter(t=>!t.tamamlandi).length;
-      let badge=btn.querySelector('.rail-badge');
-      if(sayi>0){
-        if(!badge){
-          badge=document.createElement('span');
-          badge.className='rail-badge';
-          badge.style.cssText='position:absolute;top:2px;right:2px;min-width:14px;height:14px;border-radius:7px;font-size:8px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 3px;pointer-events:none;font-family:Nunito,sans-serif;color:white;';
-          btn.style.position='relative';
-          btn.appendChild(badge);
-        }
-        badge.style.background='var(--accent)';
-        badge.textContent=sayi>9?'9+':sayi;
-      } else if(badge){
-        badge.remove();
-      }
-    }
   });
 }
 
